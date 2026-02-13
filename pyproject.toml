@@ -1,0 +1,25 @@
+[project]
+name = "pinn-tomo-cleanroom"
+version = "0.1.0"
+description = ""
+authors = [
+    {name = "Your Name",email = "you@example.com"}
+]
+readme = "README.md"
+requires-python = ">=3.14,<3.15"
+dependencies = [
+    "torch (>=2.10.0,<3.0.0)",
+    "numpy (>=2.4.2,<3.0.0)",
+    "matplotlib (>=3.10.8,<4.0.0)",
+    "deepwave (>=0.0.26,<0.0.27)",
+    "scipy (>=1.17.0,<2.0.0)",
+    "scikit-fmm (>=2025.6.23,<2026.0.0)",
+    "pandas (>=3.0.0,<4.0.0)"
+]
+
+[tool.poetry]
+packages = [{include = "pinn_tomo_cleanroom", from = "src"}]
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"
