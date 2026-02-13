@@ -1,0 +1,5 @@
+outs:
+- md5: b416f3b932cc2f84f77d74692b221149
+  size: 141683
+  hash: md5
+  path: marmousi_training_picks.csv

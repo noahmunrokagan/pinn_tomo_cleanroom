@@ -1,6 +1,6 @@
 # Clean room implementation of PINNTOMO: SEISMIC TOMOGRAPHY USING PHYSICS-INFORMED NEURAL NETWORKS
 This project was done to practice scientific programming and seismology based PINN designing/training
-
+Additionally, this was done to practice DVC for datasets generated, and ML models with GCloud
 ## Data
 The data is synthetically generated using the Marmousi model downloaded from https://www.geoazur.fr/WIND/bin/view/Main/Data/Marmousi, processed with the `deepwave` library
 The marmousi model is cropped to allow for running locally
