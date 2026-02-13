@@ -21,7 +21,7 @@ class AdaptiveELU(nn.Module):
 
 class TTPinn(nn.Module):
     def __init__(self):
-        super.__init__()
+        super().__init__()
         layers = []
         in_features = 4 # [rx, rz, sx, sz]
 
@@ -50,7 +50,7 @@ class TTPinn(nn.Module):
 
 class VPinn(nn.Module):
     def __init__(self):
-        super.__init__()
+        super().__init__()
         layers = []
         in_features = 2
 
@@ -72,5 +72,51 @@ class VPinn(nn.Module):
         v = v_min + (v_max - v_min) * self.net(inputs)
         return v
     
+def compute_data_loss(tt_model, batch):
+    """
+    batch: a dictionary or list containing (sx, sz, rx, rz, t_obs)
+    """
+    # 1. Unpack and Normalize (Assume model_max_dist = 4000.0)
+    sx, sz = batch['sx'] / 4000.0, batch['sz'] / 4000.0
+    rx, rz = batch['rx'] / 4000.0, batch['rz'] / 4000.0
+    t_obs = batch['t_obs']
 
+    # 2. Predict Traveltime
+    t_pred = tt_model(rx, rz, sx, sz)
+
+    # 3. Mean Squared Error
+    return torch.mean((t_pred - t_obs)**2)
+
+def eikonal_loss(model, x, y):
+    """
+    The Physics Loss: |grad(T)| - 1/v = 0
+    """
+    x.requires_grad = True
+    y.requires_grad = True
     
+    T_pred, V_pred = model(x, y)
+    grad_outputs = torch.ones_like(T_pred)
+    
+    # 1. Compute gradients of T with respect to x and y
+    dT_dx = torch.autograd.grad(outputs=T_pred, 
+                                inputs=x, 
+                                grad_outputs=grad_outputs, 
+                                create_graph=True,
+                                retain_graph=True,
+                                only_inputs=True
+                                )[0]
+    dT_dy = torch.autograd.grad(outputs=T_pred, 
+                                inputs=y,
+                                grad_outputs=grad_outputs,
+                                create_graph=True,
+                                retain_graph=True,
+                                only_inputs=True
+                                )[0]
+    
+    # 2. Compute the Eikonal Residual
+    # Equation: (dT/dx)^2 + (dT/dy)^2 = 1 / V^2
+    # So, Residual = (dT_dx**2 + dT_dy**2) - (1 / V_pred**2)
+    
+    eikonal_residual = (dT_dx ** 2 + dT_dy ** 2) - (1 / V_pred ** 2)
+    
+    return torch.mean(eikonal_residual**2)
