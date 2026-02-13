@@ -7,36 +7,33 @@ import wandb
 # Initialize WandB
 wandb.init(project="ant-pinn-inversion")
 
+class AdaptiveELU(nn.Module):
+    def __init__(self, input_features):
+        super().__init__()
+        # Initialize the slope parameter 'a' to 1.0
+        # This becomes a learnable parameter for the optimizer
+        self.a = nn.Parameter(torch.ones(1)) 
+        self.elu = nn.ELU()
+
+    def forward(self, x):
+        # The 'adaptive' part: scale the input by 'a' before applying ELU
+        return self.elu(self.a * x)
+
 class TTPinn(nn.Module):
     def __init__(self):
         super.__init__()
+        layers = []
+        in_features = 4 # [rx, rz, sx, sz]
 
-        self.net = nn.Sequential(
-            nn.Linear(4,20),
-            nn.ELU(),
-            nn.Linear(20,20),
-            nn.ELU(),
-            nn.Linear(20,20),
-            nn.ELU(),
-            nn.Linear(20,20),
-            nn.ELU(),
-            nn.Linear(20,20),
-            nn.ELU(),
-            nn.Linear(20,20),
-            nn.ELU(),
-            nn.Linear(20,20),
-            nn.ELU(),
-            nn.Linear(20,20),
-            nn.ELU(),
-            nn.Linear(20,20),
-            nn.ELU(),
-            nn.Linear(20,20),
-            nn.ELU(),
-            nn.Linear(20,20),
-            nn.ELU(),
-            nn.Linear(20, 1),
-            nn.Softplus() # ensures it's positive
-        )
+        # Build 10 layers
+        for _ in range(10):
+            layers.append(nn.Linear(in_features, 20))
+            layers.append(AdaptiveELU(20)) # Use our custom layer
+            in_features = 20
+            
+        layers.append(nn.Linear(20, 1))
+        layers.append(nn.Softplus())
+        self.net = nn.Sequential(*layers)
     
     def forward(self, rx, rz, sx, sz):
 
@@ -54,33 +51,19 @@ class TTPinn(nn.Module):
 class VPinn(nn.Module):
     def __init__(self):
         super.__init__()
+        layers = []
+        in_features = 2
 
-        self.net = nn.Sequential(
-            nn.Linear(2,10),
-            nn.ELU(),
-            nn.Linear(10,10),
-            nn.ELU(),
-            nn.Linear(10,10),
-            nn.ELU(),
-            nn.Linear(10,10),
-            nn.ELU(),
-            nn.Linear(10,10),
-            nn.ELU(),
-            nn.Linear(10,10),
-            nn.ELU(),
-            nn.Linear(10,10),
-            nn.ELU(),
-            nn.Linear(10,10),
-            nn.ELU(),
-            nn.Linear(10,10),
-            nn.ELU(),
-            nn.Linear(10,10),
-            nn.ELU(),
-            nn.Linear(10,10),
-            nn.ELU(),
-            nn.Linear(10, 1),
-            nn.Sigmoid()
-        )
+        # Build 10 layers
+        for _ in range(10):
+            layers.append(nn.Linear(in_features, 10))
+            layers.append(AdaptiveELU(10)) # Use our custom layer
+            in_features = 10
+            
+        layers.append(nn.Linear(10, 1))
+        layers.append(nn.Softplus())
+        self.net = nn.Sequential(*layers)
+        
     
     def forward(self, rx, rz):
         inputs = torch.cat([rx, rz], dim=1)
