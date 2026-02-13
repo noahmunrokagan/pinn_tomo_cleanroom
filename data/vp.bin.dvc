@@ -1,0 +1,5 @@
+outs:
+- md5: 3603290793a5d870fb1290301bc68dbd
+  size: 6912204
+  hash: md5
+  path: vp.bin

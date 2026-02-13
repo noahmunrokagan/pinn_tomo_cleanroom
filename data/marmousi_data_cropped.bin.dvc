@@ -1,0 +1,5 @@
+outs:
+- md5: f55335afae3fa059558de5b0f5d1d59d
+  size: 15000000
+  hash: md5
+  path: marmousi_data_cropped.bin
