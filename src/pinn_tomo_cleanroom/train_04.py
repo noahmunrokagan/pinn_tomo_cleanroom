@@ -1,12 +1,15 @@
 from .initialize_network_03 import TTPinn, VPinn, compute_data_loss, boundary_condition_loss, eikonal_loss
 import torch
 from torch.utils.data import DataLoader, TensorDataset, random_split
+import torch.optim as optim
 import wandb
 import pandas as pd
 
 # Training setup
 training_percent = 0.8
 batch_size = 64
+epochs = 5000
+device = torch.device("cpu")
 
 data = pd.read_csv("data/marmousi_training_picks.csv")
 Xs = torch.from_numpy(data.sx.to_numpy())
@@ -35,12 +38,16 @@ tt_test_loader = DataLoader(tt_test, batch_size=batch_size, shuffle=False)
 v_train_loader = DataLoader(v_train, batch_size=batch_size, shuffle=True)
 v_test_loader = DataLoader(v_test, batch_size=batch_size, shuffle=False)
 
-
-
+# Initialize model and loss
+tt_model = TTPinn().to(device)
+v_model = VPinn().to(device)
+optimizer = optim.Adam()
 
 # Initialize WandB
 wandb.init(project="ant-pinn-inversion")
 
-device = torch.device("cpu")
+for epoch in range(epochs):
+    optim.zero
+
 
 
