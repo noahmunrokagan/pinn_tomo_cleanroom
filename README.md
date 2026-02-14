@@ -11,5 +11,8 @@ To prepare the synthetic data for the PINN, we transform raw wavefields into tra
 ## Model
 The goal of this model which follows the theory outlined in Waheed et al 2021, uses the Eikonal equation to approximate the Marmousi model with a PINN
 
+## Key Differences
+- I used a batch size of 64, with 5000 samples (due to running the training locally on cpu)
+
 ## Reference
 Waheed, U. bin, Alkhalifah, T., Haghighat, E., Song, C., & Virieux, J. (2021). PINNtomo: Seismic tomography using physics-informed neural networks (Version 1). arXiv. https://doi.org/10.48550/ARXIV.2104.01588
