@@ -87,6 +87,46 @@ def compute_data_loss(tt_model, batch):
     # 3. Mean Squared Error
     return torch.mean((t_pred - t_obs)**2)
 
+def boundary_condition_loss(tt_model, v_model, collocation_points, source_locations):
+    """
+    collocation_points: Tensor [N, 2] representing (x, z)
+    source_locations: Tensor [N, 2] representing (sx, sz)
+    """
+    # 1. Enable gradient tracking for coordinates
+    coords = collocation_points.clone().detach().requires_grad_(True)
+    x = coords[:, 0:1]
+    z = coords[:, 1:2]
+    
+    # Sources (usually fixed for the batch)
+    sx = source_locations[:, 0:1]
+    sz = source_locations[:, 1:2]
+
+    # 2. Get Predicted Traveltime
+    # We treat the collocation point as a 'virtual receiver'
+    T = tt_model(x, z, sx, sz)
+
+    # 3. Calculate Gradients dT/dx and dT/dz
+    grad_outputs = torch.ones_like(T)
+    gradients = torch.autograd.grad(
+        outputs=T,
+        inputs=coords,
+        grad_outputs=grad_outputs,
+        create_graph=True, # Critical for allowing backprop through the gradient
+        retain_graph=True
+    )[0]
+
+    dT_dx = gradients[:, 0:1]
+    dT_dz = gradients[:, 1:2]
+
+    # 4. Get Predicted Velocity at these points
+    V_pred = v_model(x, z)
+
+    # 5. Eikonal Equation: (dT/dx)^2 + (dT/dz)^2 = 1 / V^2
+    lhs = dT_dx**2 + dT_dz**2
+    rhs = 1.0 / (V_pred**2 + 1e-6) # add epsilon to avoid div by zero
+
+    return torch.mean((lhs - rhs)**2)
+
 def eikonal_loss(model, x, y):
     """
     The Physics Loss: |grad(T)| - 1/v = 0
