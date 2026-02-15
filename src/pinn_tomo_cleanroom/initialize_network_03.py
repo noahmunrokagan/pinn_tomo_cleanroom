@@ -61,7 +61,7 @@ class VPinn(nn.Module):
             in_features = 10
             
         layers.append(nn.Linear(10, 1))
-        layers.append(nn.Softplus())
+        layers.append(nn.Sigmoid())
         self.net = nn.Sequential(*layers)
         
     

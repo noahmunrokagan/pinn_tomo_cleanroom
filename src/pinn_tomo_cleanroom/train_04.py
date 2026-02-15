@@ -1,4 +1,4 @@
-from .initialize_network_03 import TTPinn, VPinn, compute_data_loss, boundary_condition_loss, eikonal_loss
+from initialize_network_03 import TTPinn, VPinn, compute_data_loss, eikonal_loss
 import torch
 from torch.utils.data import DataLoader, TensorDataset, random_split
 import torch.optim as optim
@@ -13,10 +13,10 @@ lbfgs_max_iter = 100
 device = torch.device("cpu")
 
 data = pd.read_csv("data/marmousi_training_picks.csv")
-Xs = torch.from_numpy(data.sx.to_numpy()) / 4000.0 # normalize
-Zs = torch.from_numpy(data.sz.to_numpy()) / 4000.0 # normalize
-Xr = torch.from_numpy(data.rx.to_numpy()) / 4000.0 # normalize
-Zr = torch.from_numpy(data.rz.to_numpy()) / 4000.0 # normalize
+Xs = torch.from_numpy(data.sx.to_numpy()).float() / 4000.0 # normalize
+Zs = torch.from_numpy(data.sz.to_numpy()).float() / 4000.0 # normalize
+Xr = torch.from_numpy(data.rx.to_numpy()).float() / 4000.0 # normalize
+Zr = torch.from_numpy(data.rz.to_numpy()).float() / 4000.0 # normalize
 T = torch.from_numpy(data.t_obs.to_numpy()).float().view(-1,1) # shape [N, 1]
 
 tt_list = [Xr, Zr, Xs, Zs]
@@ -44,7 +44,7 @@ tt_model = TTPinn().to(device)
 v_model = VPinn().to(device)
 
 all_params = list(tt_model.parameters()) + list(v_model.parameters())
-criterion = torch.nn.CrossEntropyLoss()
+# criterion = torch.nn.CrossEntropyLoss()
 optimizer1 = optim.Adam(all_params, lr=0.001)
 optimizer2 = optim.LBFGS(all_params, lr=1.0, max_iter=20, history_size=100)
 
@@ -62,8 +62,10 @@ for epoch in range(epochs):
         rz = tt_inputs[:, 1:2]
         sx = tt_inputs[:, 2:3]
         sz = tt_inputs[:, 3:4]
-        pde_x = torch.rand(batch_size, 1, requires_grad=True, device=device)
-        pde_z = torch.rand(batch_size, 1, requires_grad=True, device=device)
+
+        current_batch_size = rx.shape[0]
+        pde_x = torch.rand(current_batch_size, 1, requires_grad=True, device=device).float()
+        pde_z = torch.rand(current_batch_size, 1, requires_grad=True, device=device).float()
 
         # zero gradients
         optimizer1.zero_grad()
@@ -74,9 +76,9 @@ for epoch in range(epochs):
 
         # Calculate losses and cumulative loss
         data_loss = compute_data_loss(tt_pred, tt_outputs)
-        pde_loss = boundary_condition_loss(tt_pred, tt_outputs)
-        eik_loss = eikonal_loss(tt_pred, tt_outputs, v_pred, v_outputs)
-        total_loss = criterion(data_loss + pde_loss + eik_loss)
+        # pde_loss = boundary_condition_loss(tt_pred, tt_outputs)
+        eik_loss = eikonal_loss(tt_model, v_model, pde_x, pde_z, sx, sz)
+        total_loss = data_loss + 0.1 * eik_loss
 
         # Backwards pass
         total_loss.backward()
@@ -91,7 +93,7 @@ for epoch in range(epochs):
             "total_loss": total_loss.item(),
             "eik_loss": eik_loss.item(),
             "data_loss": data_loss.item(),
-            "pde_loss": pde_loss().item()
+            # "pde_loss": pde_loss().item()
         })
 
 print("starting phase 2: lbfgs fine tuning")
@@ -113,8 +115,10 @@ def closure():
     rx, rz = inputs[:, 0:1], inputs[:, 1:2]
     sx, sz = inputs[:, 2:3], inputs[:, 3:4]
     
-    pde_x = torch.rand(inputs.shape[0], 1, requires_grad=True, device=device)
-    pde_z = torch.rand(inputs.shape[0], 1, requires_grad=True, device=device)
+    # Match the actual size of the current batch (e.g., 32 or 64)
+    current_batch_size = rx.shape[0] 
+    pde_x = torch.rand(current_batch_size, 1, requires_grad=True, device=device).float()
+    pde_z = torch.rand(current_batch_size, 1, requires_grad=True, device=device).float()
     
     tt_pred = tt_model(rx, rz, sx, sz)
     loss_data = compute_data_loss(tt_pred, targets)

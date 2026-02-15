@@ -1,3 +1,6 @@
 data/*.bin
 data/*.csv
+data/*.pt
 .dvc/
+wandb/
+*.wandb
